@@ -7,10 +7,10 @@ RUN apk add --no-cache \
     py3-pip \
     bash \
     docker-cli \
-    jq
-
-# Install Python packages
-RUN pip3 install fastapi uvicorn requests
+    jq \
+    py3-fastapi \
+    py3-uvicorn \
+    py3-requests
 
 # Create shared directory for file exchange
 RUN mkdir -p /shared

@@ -5,16 +5,16 @@ RUN apt-get update && apt-get install -y \
     curl \
     python3 \
     python3-pip \
+    python3-fastapi \
+    python3-uvicorn \
+    python3-requests \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Python packages
-RUN pip3 install fastapi uvicorn requests
-
-# Copy the API script (we'll create this later)
-COPY ./api/ollama_service.py /app/
 
 # Create a directory for shared files
 RUN mkdir -p /shared
+
+# Copy the API script (we'll create this later)
+COPY ./api/ollama_service.py /app/
 
 # Set working directory
 WORKDIR /app
