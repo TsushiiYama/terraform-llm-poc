@@ -20,6 +20,10 @@ terraform {
     }
   }
 }
+
+provider "docker" {
+  host = "unix:///var/run/docker.sock"
+}
 """
     with open(os.path.join(TERRAFORM_DIR, "required_providers.tf"), "w") as f:
         f.write(providers_content)

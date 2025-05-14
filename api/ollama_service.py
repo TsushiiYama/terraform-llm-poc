@@ -73,16 +73,70 @@ def extract_json_from_response(response_text):
     # Best guess at whether it contains terraform code
     if "resource" in response_text and "{" in response_text and "}" in response_text:
         # Extract what looks like Terraform code
-        return {
-            "needs_clarification": False,
-            "terraform_code": response_text.strip()
-        }
+        terraform_code = extract_terraform_code(response_text)
+        if terraform_code:
+            return {
+                "needs_clarification": False,
+                "terraform_code": terraform_code
+            }
     
     # Default fallback
     return {
         "error": "Could not parse LLM response",
         "raw_response": response_text
     }
+
+# Helper function to extract Terraform code from mixed text
+def extract_terraform_code(text):
+    # Try to extract terraform code from markdown code blocks
+    code_pattern = r"```(?:terraform|hcl)?\s*([\s\S]*?)\s*```"
+    matches = re.findall(code_pattern, text)
+    
+    if matches:
+        # Join all code blocks
+        return "\n\n".join([match.strip() for match in matches])
+    
+    # If no code blocks, try to extract just the terraform code parts
+    lines = text.strip().split('\n')
+    code_lines = []
+    in_code_block = False
+    
+    for line in lines:
+        stripped = line.strip()
+        
+        # Check if this line looks like Terraform code
+        if (stripped.startswith("resource ") or 
+            stripped.startswith("provider ") or 
+            stripped.startswith("terraform {") or
+            stripped.startswith("module ") or
+            stripped.startswith("variable ") or
+            stripped.startswith("output ") or
+            stripped.startswith("locals {") or
+            stripped.startswith("data ")):
+            in_code_block = True
+            code_lines.append(line)
+        # Continue capturing lines if we're in a code block
+        elif in_code_block:
+            if stripped and not stripped.startswith("#") and not stripped.startswith("//"):
+                code_lines.append(line)
+                # Check for block end
+                if stripped == "}" and not any(c for c in stripped if c not in ['}', ' ', '\t']):
+                    in_code_block = False
+    
+    if code_lines:
+        return "\n".join(code_lines)
+    
+    # If all else fails, just return lines that look like they might be code
+    potential_code_lines = []
+    for line in lines:
+        stripped = line.strip()
+        if ('{' in stripped or '}' in stripped or '=' in stripped) and not stripped.startswith('#') and not stripped.startswith('//'):
+            potential_code_lines.append(line)
+    
+    if potential_code_lines:
+        return "\n".join(potential_code_lines)
+    
+    return ""
 
 # Endpoint to generate Terraform code
 @app.post("/generate")
@@ -96,13 +150,17 @@ async def generate_terraform(request: InfraRequest):
     You are a Terraform expert. Generate Terraform code based on the following infrastructure requirements:
     {request.description}
     
-    Create code for the "kreuzwerker/docker" provider, not "hashicorp/docker".
+    Important guidelines:
+    1. Use the "kreuzwerker/docker" provider, not "hashicorp/docker".
+    2. Put your Terraform code inside ```terraform code blocks.
+    3. Your response should ONLY contain Terraform code without any comments or explanations within the code blocks.
+    4. You can provide explanations before or after the code block, but not inside it.
+    5. Make sure the Terraform code is valid and ready to use.
     
     If you need any clarification, respond with a JSON object with a 'needs_clarification' field set to true 
     and a 'question' field containing your question.
     
-    Otherwise, respond with a JSON object with 'needs_clarification' set to false and 'terraform_code' 
-    containing the complete Terraform code.
+    Otherwise, provide the complete Terraform code inside a ```terraform code block.
     """
     
     # Call Ollama API
@@ -156,13 +214,17 @@ async def handle_clarification(response: ClarificationResponse):
     Previous clarifications:
     {clarification_context}
     
-    Create code for the "kreuzwerker/docker" provider, not "hashicorp/docker".
+    Important guidelines:
+    1. Use the "kreuzwerker/docker" provider, not "hashicorp/docker".
+    2. Put your Terraform code inside ```terraform code blocks.
+    3. Your response should ONLY contain Terraform code without any comments or explanations within the code blocks.
+    4. You can provide explanations before or after the code block, but not inside it.
+    5. Make sure the Terraform code is valid and ready to use.
     
     If you still need more clarification, respond with a JSON object with 'needs_clarification' set to true and
     a 'question' field with your follow-up question.
     
-    Otherwise, respond with a JSON object with 'needs_clarification' set to false and 'terraform_code' 
-    containing the complete Terraform code.
+    Otherwise, provide the complete Terraform code inside a ```terraform code block.
     """
     
     # Call Ollama API
@@ -228,12 +290,15 @@ async def regenerate_code(request: RegenerateRequest = None):
     Previous clarifications:
     {clarification_context}
     
-    Please fix the code and provide a corrected version. Make sure to:
+    Please fix the code and provide a corrected version. Important guidelines:
     1. Use the "kreuzwerker/docker" provider, not "hashicorp/docker"
-    2. Fix any syntax or validation errors
-    3. Include all necessary provider configurations
+    2. Put your Terraform code inside ```terraform code blocks
+    3. Your response should ONLY contain Terraform code without any comments within the code blocks
+    4. You can provide explanations before or after the code block
+    5. Fix any syntax or validation errors
+    6. Include all necessary provider configurations
     
-    Respond with a JSON object with 'terraform_code' containing the complete fixed Terraform code.
+    Provide only the complete fixed Terraform code inside a ```terraform code block.
     """
     
     # Call Ollama API
