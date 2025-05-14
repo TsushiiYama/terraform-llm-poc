@@ -21,11 +21,20 @@ RUN mkdir -p /shared
 # Copy the API script
 COPY ./api/ollama_service.py /app/
 
+# Create an entrypoint script
+RUN echo '#!/bin/sh' > /entrypoint.sh && \
+    echo 'cd /app' >> /entrypoint.sh && \
+    echo '/opt/venv/bin/python3 ollama_service.py' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
 # Set working directory
 WORKDIR /app
 
-# Default command to start the API service (full path to the Python in virtual env) Expose the API port
-CMD ["/opt/venv/bin/python3", "/app/ollama_service.py"]
+# Use ENTRYPOINT to override the default Ollama entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
+
+# Default command (empty because we're using ENTRYPOINT)
+CMD []
 
 # Expose the API port
 EXPOSE 8000
