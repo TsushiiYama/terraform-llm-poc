@@ -24,8 +24,8 @@ COPY ./api/ollama_service.py /app/
 # Set working directory
 WORKDIR /app
 
-# Default command to start the API service
-CMD ["python3", "ollama_service.py"]
+# Default command to start the API service (full path to the Python in virtual env) Expose the API port
+CMD ["/opt/venv/bin/python3", "/app/ollama_service.py"]
 
 # Expose the API port
 EXPOSE 8000
