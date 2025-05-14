@@ -7,16 +7,16 @@ RUN apk add --no-cache \
     py3-pip \
     bash \
     docker-cli \
-    jq
+    jq \
+    python3-dev \
+    py3-virtualenv
 
-# Set up a virtual environment to avoid external environment issues
-RUN python3 -m pip install --upgrade pip && \
-    python3 -m pip install virtualenv && \
-    python3 -m virtualenv /opt/venv
+# Create a virtual environment directly with venv
+RUN python3 -m venv /opt/venv
 
 # Activate virtual environment and install packages
 ENV PATH="/opt/venv/bin:$PATH"
-RUN pip install fastapi uvicorn requests
+RUN /opt/venv/bin/pip install fastapi uvicorn requests
 
 # Create shared directory for file exchange
 RUN mkdir -p /shared
