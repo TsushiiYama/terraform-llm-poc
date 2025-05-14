@@ -1,0 +1,76 @@
+Building terraform
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 572B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/hashicorp/terraform:latest
+#2 DONE 0.4s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/6] FROM docker.io/hashicorp/terraform:latest@sha256:5820b87995595425074f881500a037b0ccd41158d0d9b44d78f5f120612f2d3d
+#4 DONE 0.0s
+
+#5 [2/6] RUN apk add --no-cache     curl     python3     py3-pip     bash     docker-cli     jq
+#5 CACHED
+
+#6 [internal] load build context
+#6 transferring context: 69B done
+#6 DONE 0.0s
+
+#7 [3/6] RUN pip3 install fastapi uvicorn requests
+#7 0.746 error: externally-managed-environment
+#7 0.746 
+#7 0.746 × This environment is externally managed
+#7 0.746 ╰─> 
+#7 0.746     The system-wide python installation should be maintained using the system
+#7 0.746     package manager (apk) only.
+#7 0.746     
+#7 0.746     If the package in question is not packaged already (and hence installable via
+#7 0.746     "apk add py3-somepackage"), please consider installing it inside a virtual
+#7 0.746     environment, e.g.:
+#7 0.746     
+#7 0.746     python3 -m venv /path/to/venv
+#7 0.746     . /path/to/venv/bin/activate
+#7 0.746     pip install mypackage
+#7 0.746     
+#7 0.746     To exit the virtual environment, run:
+#7 0.746     
+#7 0.746     deactivate
+#7 0.746     
+#7 0.746     The virtual environment is not deleted, and can be re-entered by re-sourcing
+#7 0.746     the activate file.
+#7 0.746     
+#7 0.746     To automatically manage virtual environments, consider using pipx (from the
+#7 0.746     pipx package).
+#7 0.746 
+#7 0.746 note: If you believe this is a mistake, please contact your Python installation or OS distribution provider. You can override this, at the risk of breaking your Python installation or OS, by passing --break-system-packages.
+#7 0.746 hint: See PEP 668 for the detailed specification.
+#7 ERROR: process "/bin/sh -c pip3 install fastapi uvicorn requests" did not complete successfully: exit code: 1
+------
+ > [3/6] RUN pip3 install fastapi uvicorn requests:
+0.746     deactivate
+0.746     
+0.746     The virtual environment is not deleted, and can be re-entered by re-sourcing
+0.746     the activate file.
+0.746     
+0.746     To automatically manage virtual environments, consider using pipx (from the
+0.746     pipx package).
+0.746 
+0.746 note: If you believe this is a mistake, please contact your Python installation or OS distribution provider. You can override this, at the risk of breaking your Python installation or OS, by passing --break-system-packages.
+0.746 hint: See PEP 668 for the detailed specification.
+------
+Dockerfile:13
+--------------------
+  11 |     
+  12 |     # Install Python packages
+  13 | >>> RUN pip3 install fastapi uvicorn requests
+  14 |     
+  15 |     # Create shared directory for file exchange
+--------------------
+ERROR: failed to solve: process "/bin/sh -c pip3 install fastapi uvicorn requests" did not complete successfully: exit code: 1
+Service 'terraform' failed to build : Build failed
