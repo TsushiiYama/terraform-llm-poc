@@ -43,16 +43,20 @@ def main():
         answer = input("Your answer: ")
         
         # Send clarification
-        response = requests.post(
-            f"{API_URL}/clarify", 
-            json={"answer": answer}
-        )
-        
-        if response.status_code != 200:
-            print(f"Error: {response.text}")
-            return
+        try:
+            response = requests.post(
+                f"{API_URL}/clarify", 
+                json={"answer": answer}
+            )
             
-        result = response.json()
+            if response.status_code != 200:
+                print(f"Error: {response.text}")
+                return
+                
+            result = response.json()
+        except Exception as e:
+            print(f"Error sending clarification: {str(e)}")
+            return
     
     # Display the generated Terraform code
     print("\nGenerated Terraform Code:")

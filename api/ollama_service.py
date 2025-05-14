@@ -20,9 +20,19 @@ class ClarificationRequest(BaseModel):
 class ClarificationResponse(BaseModel):
     answer: str
 
+# Store the current conversation state
+conversation_state = {
+    "current_description": "",
+    "needs_clarification": False,
+    "question": ""
+}
+
 # Endpoint to generate Terraform code
 @app.post("/generate")
 async def generate_terraform(request: InfraRequest):
+    # Store the description for later use
+    conversation_state["current_description"] = request.description
+    
     # Prepare prompt for the LLM
     prompt = f"""
     You are a Terraform expert. Generate Terraform code based on the following infrastructure requirements:
@@ -43,10 +53,77 @@ async def generate_terraform(request: InfraRequest):
     
     # Parse the result
     try:
-        response = json.loads(result.stdout)
+        response_text = result.stdout
+        # Try to extract JSON from the response (it might be surrounded by markdown code blocks)
+        if "```json" in response_text:
+            json_content = response_text.split("```json")[1].split("```")[0].strip()
+            response = json.loads(json_content)
+        else:
+            # Attempt to parse the whole response as JSON
+            response = json.loads(response_text)
+            
         if response.get("needs_clarification", False):
+            # Store the state for clarification
+            conversation_state["needs_clarification"] = True
+            conversation_state["question"] = response["question"]
             return {"needs_clarification": True, "question": response["question"]}
         else:
+            # Reset clarification state
+            conversation_state["needs_clarification"] = False
+            terraform_code = response["terraform_code"]
+            
+            # Save the code to the shared volume
+            with open("/shared/main.tf", "w") as f:
+                f.write(terraform_code)
+                
+            return {"needs_clarification": False, "terraform_code": terraform_code}
+    except json.JSONDecodeError:
+        # Handle case where LLM did not return valid JSON
+        return {"error": "Failed to parse LLM response", "raw_response": result.stdout}
+
+# Endpoint to handle clarification responses
+@app.post("/clarify")
+async def handle_clarification(response: ClarificationResponse):
+    if not conversation_state["needs_clarification"]:
+        raise HTTPException(status_code=400, detail="No clarification was requested")
+    
+    # Prepare a new prompt with the clarification
+    prompt = f"""
+    You are a Terraform expert. Generate Terraform code based on the following infrastructure requirements:
+    {conversation_state["current_description"]}
+    
+    I asked for clarification: {conversation_state["question"]}
+    You answered: {response.answer}
+    
+    Based on this information, respond with a JSON object with 'needs_clarification' set to false and 'terraform_code' 
+    containing the complete Terraform code. If you still need more clarification, respond with a JSON object with
+    'needs_clarification' set to true and a 'question' field with your follow-up question.
+    """
+    
+    # Call Ollama API
+    result = subprocess.run(
+        ["ollama", "run", "codellama", prompt],
+        capture_output=True, text=True
+    )
+    
+    # Parse the result
+    try:
+        response_text = result.stdout
+        # Try to extract JSON from the response (it might be surrounded by markdown code blocks)
+        if "```json" in response_text:
+            json_content = response_text.split("```json")[1].split("```")[0].strip()
+            response = json.loads(json_content)
+        else:
+            # Attempt to parse the whole response as JSON
+            response = json.loads(response_text)
+            
+        if response.get("needs_clarification", False):
+            # Update the state for the new clarification
+            conversation_state["question"] = response["question"]
+            return {"needs_clarification": True, "question": response["question"]}
+        else:
+            # Reset clarification state
+            conversation_state["needs_clarification"] = False
             terraform_code = response["terraform_code"]
             
             # Save the code to the shared volume
