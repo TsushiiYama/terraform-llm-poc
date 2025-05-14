@@ -27,6 +27,30 @@ provider "docker" {
 """
     with open(os.path.join(TERRAFORM_DIR, "required_providers.tf"), "w") as f:
         f.write(providers_content)
+    
+    # Check the current code for any provider blocks that might conflict
+    try:
+        with open(os.path.join(TERRAFORM_DIR, "main.tf"), "r") as f:
+            main_content = f.read()
+        
+        # Remove any provider blocks
+        provider_pattern = r'provider\s+"[^"]+"\s+\{[^}]*\}'
+        cleaned_content = re.sub(provider_pattern, '', main_content)
+        
+        # Remove any terraform blocks
+        terraform_pattern = r'terraform\s+\{[^}]*\}'
+        cleaned_content = re.sub(terraform_pattern, '', cleaned_content)
+        
+        # Fix incorrect resource types
+        if 'source "docker_container"' in cleaned_content:
+            cleaned_content = cleaned_content.replace('source "docker_container"', 'resource "docker_container"')
+        
+        # Save cleaned content back
+        with open(os.path.join(TERRAFORM_DIR, "main.tf"), "w") as f:
+            f.write(cleaned_content)
+    except Exception as e:
+        print(f"Error cleaning main.tf: {str(e)}")
+        # If we can't read/write the file, just continue
 
 @app.post("/validate")
 async def validate_terraform():

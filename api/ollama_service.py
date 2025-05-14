@@ -86,15 +86,16 @@ def extract_json_from_response(response_text):
         "raw_response": response_text
     }
 
-# Helper function to extract Terraform code from mixed text
+# Helper function to extract and clean Terraform code from mixed text
 def extract_terraform_code(text):
     # Try to extract terraform code from markdown code blocks
     code_pattern = r"```(?:terraform|hcl)?\s*([\s\S]*?)\s*```"
     matches = re.findall(code_pattern, text)
     
     if matches:
-        # Join all code blocks
-        return "\n\n".join([match.strip() for match in matches])
+        # Join all code blocks and clean
+        code = "\n\n".join([match.strip() for match in matches])
+        return clean_terraform_code(code)
     
     # If no code blocks, try to extract just the terraform code parts
     lines = text.strip().split('\n')
@@ -124,7 +125,7 @@ def extract_terraform_code(text):
                     in_code_block = False
     
     if code_lines:
-        return "\n".join(code_lines)
+        return clean_terraform_code("\n".join(code_lines))
     
     # If all else fails, just return lines that look like they might be code
     potential_code_lines = []
@@ -134,9 +135,29 @@ def extract_terraform_code(text):
             potential_code_lines.append(line)
     
     if potential_code_lines:
-        return "\n".join(potential_code_lines)
+        return clean_terraform_code("\n".join(potential_code_lines))
     
     return ""
+
+# Function to clean and fix common Terraform code issues
+def clean_terraform_code(code):
+    # Replace incorrect provider references
+    if 'provider "kreuzwerker"' in code:
+        code = code.replace('provider "kreuzwerker"', 'provider "docker"')
+    
+    # Fix resource types
+    if 'source "docker_container"' in code:
+        code = code.replace('source "docker_container"', 'resource "docker_container"')
+    
+    # Remove any provider definition (we'll use our own)
+    provider_pattern = r'provider\s+"docker"\s+\{[^}]*\}'
+    code = re.sub(provider_pattern, '', code)
+    
+    # Remove any terraform block (we'll provide it)
+    terraform_pattern = r'terraform\s+\{[^}]*\}'
+    code = re.sub(terraform_pattern, '', code)
+    
+    return code.strip()
 
 # Endpoint to generate Terraform code
 @app.post("/generate")
@@ -150,17 +171,34 @@ async def generate_terraform(request: InfraRequest):
     You are a Terraform expert. Generate Terraform code based on the following infrastructure requirements:
     {request.description}
     
-    Important guidelines:
-    1. Use the "kreuzwerker/docker" provider, not "hashicorp/docker".
-    2. Put your Terraform code inside ```terraform code blocks.
-    3. Your response should ONLY contain Terraform code without any comments or explanations within the code blocks.
-    4. You can provide explanations before or after the code block, but not inside it.
-    5. Make sure the Terraform code is valid and ready to use.
+    CRITICAL INSTRUCTIONS:
+    1. DO NOT define a terraform provider block or provider configuration - it will be added automatically.
+    2. DO NOT define a 'provider "kreuzwerker"' block - this is incorrect.
+    3. Use ONLY resource "docker_container" and resource "docker_image" in your code.
+    4. DO NOT specify host or other provider-specific configuration.
+    5. Put your Terraform code inside ```terraform code blocks.
+    6. Keep your code simple and to the point - no explanations or comments inside the code.
+    
+    Example of correct code format:
+    ```terraform
+    resource "docker_image" "nginx" {{
+      name = "nginx:latest"
+    }}
+    
+    resource "docker_container" "nginx" {{
+      name  = "nginx-container"
+      image = docker_image.nginx.name
+      ports {{
+        internal = 80
+        external = 8080
+      }}
+    }}
+    ```
     
     If you need any clarification, respond with a JSON object with a 'needs_clarification' field set to true 
     and a 'question' field containing your question.
     
-    Otherwise, provide the complete Terraform code inside a ```terraform code block.
+    Otherwise, provide ONLY the complete Terraform code inside a ```terraform code block.
     """
     
     # Call Ollama API
@@ -214,17 +252,34 @@ async def handle_clarification(response: ClarificationResponse):
     Previous clarifications:
     {clarification_context}
     
-    Important guidelines:
-    1. Use the "kreuzwerker/docker" provider, not "hashicorp/docker".
-    2. Put your Terraform code inside ```terraform code blocks.
-    3. Your response should ONLY contain Terraform code without any comments or explanations within the code blocks.
-    4. You can provide explanations before or after the code block, but not inside it.
-    5. Make sure the Terraform code is valid and ready to use.
+    CRITICAL INSTRUCTIONS:
+    1. DO NOT define a terraform provider block or provider configuration - it will be added automatically.
+    2. DO NOT define a 'provider "kreuzwerker"' block - this is incorrect.
+    3. Use ONLY resource "docker_container" and resource "docker_image" in your code.
+    4. DO NOT specify host or other provider-specific configuration.
+    5. Put your Terraform code inside ```terraform code blocks.
+    6. Keep your code simple and to the point - no explanations or comments inside the code.
+    
+    Example of correct code format:
+    ```terraform
+    resource "docker_image" "nginx" {{
+      name = "nginx:latest"
+    }}
+    
+    resource "docker_container" "nginx" {{
+      name  = "nginx-container"
+      image = docker_image.nginx.name
+      ports {{
+        internal = 80
+        external = 8080
+      }}
+    }}
+    ```
     
     If you still need more clarification, respond with a JSON object with 'needs_clarification' set to true and
     a 'question' field with your follow-up question.
     
-    Otherwise, provide the complete Terraform code inside a ```terraform code block.
+    Otherwise, provide ONLY the complete Terraform code inside a ```terraform code block.
     """
     
     # Call Ollama API
@@ -290,15 +345,31 @@ async def regenerate_code(request: RegenerateRequest = None):
     Previous clarifications:
     {clarification_context}
     
-    Please fix the code and provide a corrected version. Important guidelines:
-    1. Use the "kreuzwerker/docker" provider, not "hashicorp/docker"
-    2. Put your Terraform code inside ```terraform code blocks
-    3. Your response should ONLY contain Terraform code without any comments within the code blocks
-    4. You can provide explanations before or after the code block
-    5. Fix any syntax or validation errors
-    6. Include all necessary provider configurations
+    CRITICAL INSTRUCTIONS:
+    1. DO NOT define a terraform provider block or provider configuration - it will be added automatically.
+    2. DO NOT define a 'provider "kreuzwerker"' block - this is incorrect.
+    3. Use ONLY resource "docker_container" and resource "docker_image" in your code.
+    4. DO NOT specify host or other provider-specific configuration.
+    5. Put your Terraform code inside ```terraform code blocks.
+    6. Keep your code simple and to the point - no explanations or comments inside the code.
     
-    Provide only the complete fixed Terraform code inside a ```terraform code block.
+    Example of correct code format:
+    ```terraform
+    resource "docker_image" "nginx" {{
+      name = "nginx:latest"
+    }}
+    
+    resource "docker_container" "nginx" {{
+      name  = "nginx-container"
+      image = docker_image.nginx.name
+      ports {{
+        internal = 80
+        external = 8080
+      }}
+    }}
+    ```
+    
+    Provide ONLY the complete fixed Terraform code inside a ```terraform code block.
     """
     
     # Call Ollama API
