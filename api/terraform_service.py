@@ -45,6 +45,14 @@ provider "docker" {
         if 'source "docker_container"' in cleaned_content:
             cleaned_content = cleaned_content.replace('source "docker_container"', 'resource "docker_container"')
         
+        # Fix typo in "reresource"
+        if 'reresource "docker_container"' in cleaned_content:
+            cleaned_content = cleaned_content.replace('reresource "docker_container"', 'resource "docker_container"')
+        
+        # Fix any other "reresource" typos
+        if 'reresource "' in cleaned_content:
+            cleaned_content = cleaned_content.replace('reresource "', 'resource "')
+        
         # Save cleaned content back
         with open(os.path.join(TERRAFORM_DIR, "main.tf"), "w") as f:
             f.write(cleaned_content)
