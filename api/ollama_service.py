@@ -220,6 +220,10 @@ class TerraformCodeExtractor(ICodeExtractor):
         if 'reresource "' in code:
             code = code.replace('reresource "', 'resource "')
         
+        # Fix incorrect environment variable syntax
+        if 'environment = [' in code:
+            code = code.replace('environment = [', 'env = [')
+        
         # Remove any provider definition (we'll use our own)
         provider_pattern = r'provider\s+"docker"\s+\{[^}]*\}'
         code = re.sub(provider_pattern, '', code)
@@ -261,8 +265,9 @@ class PromptTemplateService:
         3. Use ONLY "resource" blocks (not "reresource" - avoid this typo).
         4. Use only "resource "docker_container"" and "resource "docker_image"" in your code.
         5. DO NOT specify host or other provider-specific configuration.
-        6. Put your Terraform code inside ```terraform code blocks.
-        7. Keep your code simple and to the point - no explanations or comments inside the code.
+        6. Use "env" (not "environment") for container environment variables.
+        7. Put your Terraform code inside ```terraform code blocks.
+        8. Keep your code simple and to the point - no explanations or comments inside the code.
         
         Example of correct code format:
         ```terraform
@@ -277,6 +282,9 @@ class PromptTemplateService:
             internal = 80
             external = 8080
           }}
+          env = [
+            "VARIABLE_NAME=value"
+          ]
         }}
         ```
         
@@ -300,8 +308,9 @@ class PromptTemplateService:
         3. Use ONLY "resource" blocks (not "reresource" - avoid this typo).
         4. Use only "resource "docker_container"" and "resource "docker_image"" in your code.
         5. DO NOT specify host or other provider-specific configuration.
-        6. Put your Terraform code inside ```terraform code blocks.
-        7. Keep your code simple and to the point - no explanations or comments inside the code.
+        6. Use "env" (not "environment") for container environment variables.
+        7. Put your Terraform code inside ```terraform code blocks.
+        8. Keep your code simple and to the point - no explanations or comments inside the code.
         
         Example of correct code format:
         ```terraform
@@ -316,6 +325,9 @@ class PromptTemplateService:
             internal = 80
             external = 8080
           }}
+          env = [
+            "VARIABLE_NAME=value"
+          ]
         }}
         ```
         
@@ -348,8 +360,9 @@ class PromptTemplateService:
         3. Use ONLY "resource" blocks (not "reresource" - avoid this typo).
         4. Use only "resource "docker_container"" and "resource "docker_image"" in your code.
         5. DO NOT specify host or other provider-specific configuration.
-        6. Put your Terraform code inside ```terraform code blocks.
-        7. Keep your code simple and to the point - no explanations or comments inside the code.
+        6. Use "env" (not "environment") for container environment variables.
+        7. Put your Terraform code inside ```terraform code blocks.
+        8. Keep your code simple and to the point - no explanations or comments inside the code.
         
         Example of correct code format:
         ```terraform
@@ -364,6 +377,9 @@ class PromptTemplateService:
             internal = 80
             external = 8080
           }}
+          env = [
+            "VARIABLE_NAME=value"
+          ]
         }}
         ```
         

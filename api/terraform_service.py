@@ -133,6 +133,10 @@ provider "docker" {
             if 'reresource "' in cleaned_content:
                 cleaned_content = cleaned_content.replace('reresource "', 'resource "')
             
+            # Fix incorrect environment variable syntax
+            if 'environment = [' in cleaned_content:
+                cleaned_content = cleaned_content.replace('environment = [', 'env = [')
+            
             # Save cleaned content back
             with open(file_path, "w") as f:
                 f.write(cleaned_content)
