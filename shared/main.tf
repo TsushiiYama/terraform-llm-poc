@@ -1,9 +1,12 @@
-provider "kreuzwerker" {
-  host = "https://index.docker.io/v1/"
+resource "docker_image" "nginx" {
+  name = "nginx:latest"
 }
 
-resource "docker_container" "nginx-container" {
-  name   = "nginx-container"
-  image  = "nginx:latest"
-  ports  = ["80"]
+reresource "docker_container" "nginx" {
+  name = "nginx-container"
+  image = docker_image.nginx.name
+  ports {
+    internal = 80
+    external = 8080
+  }
 }
