@@ -149,6 +149,14 @@ def clean_terraform_code(code):
     if 'source "docker_container"' in code:
         code = code.replace('source "docker_container"', 'resource "docker_container"')
     
+    # Fix typo in "reresource"
+    if 'reresource "docker_container"' in code:
+        code = code.replace('reresource "docker_container"', 'resource "docker_container"')
+    
+    # Fix any other "reresource" typos
+    if 'reresource "' in code:
+        code = code.replace('reresource "', 'resource "')
+    
     # Remove any provider definition (we'll use our own)
     provider_pattern = r'provider\s+"docker"\s+\{[^}]*\}'
     code = re.sub(provider_pattern, '', code)
@@ -174,10 +182,11 @@ async def generate_terraform(request: InfraRequest):
     CRITICAL INSTRUCTIONS:
     1. DO NOT define a terraform provider block or provider configuration - it will be added automatically.
     2. DO NOT define a 'provider "kreuzwerker"' block - this is incorrect.
-    3. Use ONLY resource "docker_container" and resource "docker_image" in your code.
-    4. DO NOT specify host or other provider-specific configuration.
-    5. Put your Terraform code inside ```terraform code blocks.
-    6. Keep your code simple and to the point - no explanations or comments inside the code.
+    3. Use ONLY "resource" blocks (not "reresource" - avoid this typo).
+    4. Use only "resource "docker_container"" and "resource "docker_image"" in your code.
+    5. DO NOT specify host or other provider-specific configuration.
+    6. Put your Terraform code inside ```terraform code blocks.
+    7. Keep your code simple and to the point - no explanations or comments inside the code.
     
     Example of correct code format:
     ```terraform
@@ -255,10 +264,11 @@ async def handle_clarification(response: ClarificationResponse):
     CRITICAL INSTRUCTIONS:
     1. DO NOT define a terraform provider block or provider configuration - it will be added automatically.
     2. DO NOT define a 'provider "kreuzwerker"' block - this is incorrect.
-    3. Use ONLY resource "docker_container" and resource "docker_image" in your code.
-    4. DO NOT specify host or other provider-specific configuration.
-    5. Put your Terraform code inside ```terraform code blocks.
-    6. Keep your code simple and to the point - no explanations or comments inside the code.
+    3. Use ONLY "resource" blocks (not "reresource" - avoid this typo).
+    4. Use only "resource "docker_container"" and "resource "docker_image"" in your code.
+    5. DO NOT specify host or other provider-specific configuration.
+    6. Put your Terraform code inside ```terraform code blocks.
+    7. Keep your code simple and to the point - no explanations or comments inside the code.
     
     Example of correct code format:
     ```terraform
@@ -348,10 +358,11 @@ async def regenerate_code(request: RegenerateRequest = None):
     CRITICAL INSTRUCTIONS:
     1. DO NOT define a terraform provider block or provider configuration - it will be added automatically.
     2. DO NOT define a 'provider "kreuzwerker"' block - this is incorrect.
-    3. Use ONLY resource "docker_container" and resource "docker_image" in your code.
-    4. DO NOT specify host or other provider-specific configuration.
-    5. Put your Terraform code inside ```terraform code blocks.
-    6. Keep your code simple and to the point - no explanations or comments inside the code.
+    3. Use ONLY "resource" blocks (not "reresource" - avoid this typo).
+    4. Use only "resource "docker_container"" and "resource "docker_image"" in your code.
+    5. DO NOT specify host or other provider-specific configuration.
+    6. Put your Terraform code inside ```terraform code blocks.
+    7. Keep your code simple and to the point - no explanations or comments inside the code.
     
     Example of correct code format:
     ```terraform
