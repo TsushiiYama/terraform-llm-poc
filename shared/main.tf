@@ -1,47 +1,24 @@
-resource "docker_image" "nginx" {
-  name = "nginx:latest"
+resource "docker_image" "elasticsearch" {
+  name = "elasticsearch:7.16.3"
 }
 
-resource "docker_container" "nginx" {
-  name  = "nginx-container"
-  image = docker_image.nginx.name
+resource "docker_container" "elasticsearch" {
+  name  = "elasticsearch-container"
+  image = docker_image.elasticsearch.name
   ports {
-    internal = 80
-    external = 8080
+    internal = 9200
+    external = 9200
+  }
+  ports {
+    internal = 9300
+    external = 9300
   }
   env = [
-    "VARIABLE_NAME=value"
+    "ES_JAVA_OPTS=-Xms512m -Xmx512m"
   ]
-}
-
-resource "docker_image" "nodejs" {
-  name = "node:latest"
-}
-
-resource "docker_container" "nodejs" {
-  name  = "nodejs-container"
-  image = docker_image.nodejs.name
-  ports {
-    internal = 3000
-    external = 3000
+  network_mode = "elastic-net"
+  volume {
+    host_path = "/path/to/data"
+    container_path = "/usr/share/elasticsearch/data"
   }
-  env = [
-    "VARIABLE_NAME=value"
-  ]
-}
-
-resource "docker_image" "mongodb" {
-  name = "mongo:latest"
-}
-
-resource "docker_container" "mongodb" {
-  name  = "mongodb-container"
-  image = docker_image.mongodb.name
-  ports {
-    internal = 27017
-    external = 27017
-  }
-  env = [
-    "VARIABLE_NAME=value"
-  ]
 }
