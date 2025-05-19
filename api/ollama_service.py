@@ -88,7 +88,7 @@ class ITerraformService(ABC):
 
 # Concrete Service Implementations
 class OllamaLLMService(ILLMService):
-    def __init__(self, model_name: str = "codegemma:2b"):
+    def __init__(self, model_name: str = "codellama"):
         self.model_name = model_name
     
     def generate_code(self, prompt: str) -> str:
